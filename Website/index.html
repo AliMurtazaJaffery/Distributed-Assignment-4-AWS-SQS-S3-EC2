@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Image Processing</title>
+</head>
+<body>
+  <h1>Image Processing</h1>
+  <h2>Use this website to vertically flip your image by 180 degrees</h2>
+  <h3>Select a file</p>
+  <input type="file" id="imageUpload" accept=".png">
+  <button id ="process_btn" onclick="flipImage()">Process</button>
+  </body>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+	function flipImage() {
+	  const fileInput = document.getElementById('imageUpload');
+	  const file = fileInput.files[0];
+
+	  if (!file) {
+	    alert('Select a file.');
+	    return;
+	  }
+
+	  if (!file.type.match('image/png')) {
+	    alert('Only PNG files are allowed.');
+	    return;
+	  }
+	  const processButton = document.getElementById('process_btn');
+	  processButton.innerText = 'Processing...';
+
+	  const reader = new FileReader();
+	  reader.onload = function(event) {
+	    const imageBytes = event.target.result.substring("data:image/png;base64,".length);
+
+	    const requestBody = {
+	      image: imageBytes
+	    };
+
+	    const request = new XMLHttpRequest();
+	    request.open('POST', 'http://44.204.145.243:8080/Assignment4-0.0.1-SNAPSHOT/flipImage');
+	    request.setRequestHeader('Content-Type', 'application/json');
+	    request.onreadystatechange = function() {
+	      if (request.readyState === XMLHttpRequest.DONE) {
+	        if (request.status === 200) {
+	          const response = JSON.parse(request.responseText);
+	          const processedImageBytes = response.data;
+	          const processedImageName = 'filtered_' + file.name;
+	    		processButton.innerText = 'Process';
+
+	          downloadProcessedFile(processedImageBytes, processedImageName);
+	        } else {
+	          alert('Error processing the image.');
+	        }
+	      }
+	    };
+
+	    request.send(JSON.stringify(requestBody));
+
+	  };
+
+	  reader.readAsDataURL(file);
+}
+
+function downloadProcessedFile(imageBytes, imageName) {
+  const byteCharacters = atob(imageBytes);
+  const byteArrays = [];
+  for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
+    const slice = byteCharacters.slice(offset, offset + 1024);
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+  const blob = new Blob(byteArrays, { type: 'image/png' });
+
+  saveAs(blob, imageName);
+}
+
+
+
+</script>
+</html>
